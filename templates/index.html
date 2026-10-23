@@ -101,6 +101,23 @@
           <p class="assistant-note"><span aria-hidden="true">✦</span> Tax information is general. Confirm decisions with a qualified UK tax adviser.</p>
         </section>
       </div>
+
+      <section class="handoff-panel panel" aria-labelledby="handoff-title">
+        <div class="handoff-copy">
+          <p class="section-kicker">READY FOR THE NEXT STEP?</p>
+          <h2 id="handoff-title">Prepare portfolio builder handoff</h2>
+          <p>Send both conversations and the selected time horizon to the app handoff function. It returns a JSON payload ready for the portfolio builder.</p>
+          <span id="handoff-status" aria-live="polite">Review both conversations before creating the handoff.</span>
+        </div>
+        <button id="create-handoff" class="handoff-button" type="button">
+          Prepare JSON handoff
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m0 0-5-5m5 5-5 5M4 5v14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="handoff-output" id="handoff-output" hidden>
+          <div class="handoff-output-heading"><span>JSON payload</span><button id="copy-handoff" type="button" disabled>Copy JSON</button></div>
+          <pre id="handoff-json"></pre>
+        </div>
+      </section>
     </section>
 
     <footer class="footer"><span><span class="footer-mark">I</span> IMPERIAL CAPITAL ALLOCATION</span><span>INVEST WITH CLARITY</span></footer>

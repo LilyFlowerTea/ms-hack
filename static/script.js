@@ -8,6 +8,11 @@ const taxForm = document.querySelector("#tax-form");
 const taxInput = document.querySelector("#tax-message");
 const taxConversation = document.querySelector("#tax-conversation");
 const taxStatus = document.querySelector("#tax-status");
+const createHandoffButton = document.querySelector("#create-handoff");
+const handoffStatus = document.querySelector("#handoff-status");
+const handoffOutput = document.querySelector("#handoff-output");
+const handoffJson = document.querySelector("#handoff-json");
+const copyHandoffButton = document.querySelector("#copy-handoff");
 
 if (horizon && valueLabel) {
   function updateHorizon() {
@@ -160,6 +165,56 @@ for (const input of [chatInput, taxInput]) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       input.closest("form")?.requestSubmit();
+    }
+  });
+}
+
+if (createHandoffButton && handoffStatus) {
+  createHandoffButton.addEventListener("click", async () => {
+    if (!chatHistory.some((turn) => turn.role === "assistant")) {
+      handoffStatus.textContent = "Start and review the investor conversation before creating a handoff.";
+      return;
+    }
+
+    createHandoffButton.disabled = true;
+    copyHandoffButton.disabled = true;
+    handoffStatus.textContent = "Preparing the portfolio builder brief…";
+    try {
+      const response = await fetch("/api/portfolio-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          investor_history: chatHistory,
+          tax_history: taxHistory,
+          time_horizon: Number(horizon.value),
+        }),
+      });
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(errorText(payload));
+      }
+
+      const packageData = await response.json();
+      handoffJson.textContent = JSON.stringify(packageData, null, 2);
+      handoffOutput.hidden = false;
+      copyHandoffButton.disabled = false;
+      handoffStatus.textContent = "JSON handoff prepared by the app function. Review it, then copy it for the portfolio builder.";
+      window.dispatchEvent(new CustomEvent("imperial:portfolio-brief-ready", { detail: packageData }));
+    } catch (error) {
+      handoffStatus.textContent = error.message;
+    } finally {
+      createHandoffButton.disabled = false;
+    }
+  });
+}
+
+if (copyHandoffButton && handoffJson && handoffStatus) {
+  copyHandoffButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(handoffJson.textContent);
+      handoffStatus.textContent = "JSON payload copied to clipboard.";
+    } catch {
+      handoffStatus.textContent = "Clipboard access failed. Select and copy the JSON payload above.";
     }
   });
 }
