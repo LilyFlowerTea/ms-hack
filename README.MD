@@ -1,3 +1,6 @@
+PROJECT WEBSITE LINK:
+https://deployed-ms-hack.vercel.app/
+
 # Example Project
 
 Minimal Python samples that call the OpenAI Portal using the `openai` SDK:
