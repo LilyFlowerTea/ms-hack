@@ -1,5 +1,12 @@
 import base64
 import json
+import os
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Literal
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query, Request
 from pathlib import Path
 from typing import Literal
 
@@ -10,6 +17,13 @@ from fastapi.templating import Jinja2Templates
 from openai import OpenAIError
 from pydantic import BaseModel, Field
 
+try:
+    from api import agent, assets
+    from api.risk import compute_risk_score
+except ImportError:  # running from inside api/
+    import agent
+    import assets
+    from risk import compute_risk_score
 from ai_config import (
     AzureConfigurationError,
     get_azure_client as create_azure_client,
@@ -26,7 +40,14 @@ PROMPTS_DIR = PROJECT_ROOT / "prompts"
 MAIN_SYSTEM_PROMPT = (PROMPTS_DIR / "main_system_prompt.txt").read_text(encoding="utf-8").strip()
 TAX_SYSTEM_PROMPT = (PROMPTS_DIR / "tax_system_prompt.txt").read_text(encoding="utf-8").strip()
 
-app = FastAPI(title="Imperial Capital Allocation")
+
+@asynccontextmanager
+async def lifespan(app):
+    assets.prewarm()  # start loading news so the first /api/assets call is fast
+    yield
+
+
+app = FastAPI(title="Imperial Capital Allocation", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -232,3 +253,41 @@ def create_portfolio_brief(request: PortfolioBriefRequest) -> JSONResponse:
         "portfolio_builder_system_prompt": generated["portfolio_builder_system_prompt"],
     }
     return JSONResponse(content=package)
+
+
+# Macro risk appetite: 0 = bonds/money market, 1 = stocks/ETFs.
+@app.get("/api/risk")
+def risk_score(
+    lookback_years: int = Query(10, ge=3, le=30, description="History window each indicator is ranked against."),
+    trend_months: int = Query(6, ge=1, le=24, description="Period over which recent change is measured."),
+):
+    try:
+        return compute_risk_score(lookback_years, trend_months)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not build risk score from FRED: {exc}")
+
+
+# Largest stocks, ETFs, bond ETFs and money market ETFs with price, news and
+# analyst ratings over the last `days` days.
+@app.get("/api/assets")
+def all_assets(
+    days: int = Query(assets.DEFAULT_HORIZON_DAYS, ge=1, le=assets.MAX_HORIZON_DAYS, description="Time horizon in days, counting back from today."),
+    news_limit: int = Query(assets.DEFAULT_NEWS_LIMIT, ge=0, le=50, description="Maximum news articles per stock."),
+):
+    try:
+        return assets.get_assets(days, news_limit)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not load assets: {exc}")
+
+
+class AgentRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=4000, description="What the user wants from the portfolio.")
+
+
+# LLM agent: macro risk scale, a portfolio picked from /api/assets, and the reasoning.
+@app.post("/api/agent")
+def portfolio_agent(body: AgentRequest):
+    try:
+        return agent.run_agent(body.prompt)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Agent failed: {exc}")
