@@ -2,4 +2,8 @@ openai==2.36.0
 python-dotenv==1.0.1
 fastapi
 uvicorn
+backtrader
+pandas
+yfinance
+matplotlib
 jinja2
