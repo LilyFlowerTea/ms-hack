@@ -4,12 +4,17 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import AzureOpenAI, OpenAIError
 from pydantic import BaseModel, Field
+
+try:
+    from api.risk import compute_risk_score
+except ImportError:  # running from inside api/
+    from risk import compute_risk_score
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
@@ -207,3 +212,15 @@ def create_portfolio_brief(request: PortfolioBriefRequest) -> JSONResponse:
         "portfolio_builder_system_prompt": generated["portfolio_builder_system_prompt"],
     }
     return JSONResponse(content=package)
+
+
+# Macro risk appetite: 0 = bonds/money market, 1 = stocks/ETFs.
+@app.get("/api/risk")
+def risk_score(
+    lookback_years: int = Query(10, ge=3, le=30, description="History window each indicator is ranked against."),
+    trend_months: int = Query(6, ge=1, le=24, description="Period over which recent change is measured."),
+):
+    try:
+        return compute_risk_score(lookback_years, trend_months)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not build risk score from FRED: {exc}")

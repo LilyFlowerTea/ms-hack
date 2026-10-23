@@ -88,3 +88,29 @@ Use the endpoint, key, API version, and deployment names provided by your team.
 - **`AuthenticationError`** — verify your `subscription_key` and `endpoint` are correct.
 - **`DeploymentNotFound`** — make sure the `deployment` name matches what model you want to use in the portal.
 - **SSL or network errors** — check that your machine can reach the endpoint and it is not being blocked by any VPN or proxies.
+
+## Macro risk score API
+
+`GET /api/risk` returns a score from 0 to 1, calculated from the latest FRED (St. Louis Fed) data:
+
+- **0**: very conservative (bonds, money market)
+- **1**: very aggressive (stocks, equity ETFs)
+
+Run locally with `uvicorn api.index:app --reload`, then open http://127.0.0.1:8000/api/risk.
+
+Query params:
+
+- `lookback_years` (3–30, default 10): history window each indicator is ranked against.
+- `trend_months` (1–24, default 6): period over which recent change is measured.
+
+| Indicator | FRED series | Weight | Higher means |
+|---|---|---|---|
+| Yield curve 10Y-2Y | T10Y2Y | 0.15 | risk-on |
+| Baa corporate spread | BAA10Y | 0.20 | risk-off |
+| VIX | VIXCLS | 0.15 | risk-off |
+| Chicago Fed financial conditions | NFCI | 0.15 | risk-off |
+| Unemployment momentum (Sahm gap) | UNRATE | 0.15 | risk-off |
+| Real fed funds rate | DFF − CPI YoY | 0.10 | risk-off |
+| Industrial production YoY | INDPRO | 0.10 | risk-on |
+
+Each indicator gets a **level** score and a **trend** score. Level is the percentile of the latest value within the lookback window. Trend is the percentile of its latest N-month change. The two are blended 60/40 and flipped where needed, so 1 always means risk-on. The final score is the weighted average. Results are cached for 6 hours. `FRED_API_KEY` is optional; without it the API uses FRED's public CSV download.
