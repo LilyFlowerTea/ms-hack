@@ -1,5 +1,6 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -12,8 +13,10 @@ from openai import AzureOpenAI, OpenAIError
 from pydantic import BaseModel, Field
 
 try:
+    from api import assets
     from api.risk import compute_risk_score
 except ImportError:  # running from inside api/
+    import assets
     from risk import compute_risk_score
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,7 +27,14 @@ MAIN_SYSTEM_PROMPT = (PROMPTS_DIR / "main_system_prompt.txt").read_text(encoding
 TAX_SYSTEM_PROMPT = (PROMPTS_DIR / "tax_system_prompt.txt").read_text(encoding="utf-8").strip()
 load_dotenv(PROJECT_ROOT / ".env")
 
-app = FastAPI(title="Imperial Capital Allocation")
+
+@asynccontextmanager
+async def lifespan(app):
+    assets.prewarm()  # start loading news so the first /api/assets call is fast
+    yield
+
+
+app = FastAPI(title="Imperial Capital Allocation", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -224,3 +234,16 @@ def risk_score(
         return compute_risk_score(lookback_years, trend_months)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not build risk score from FRED: {exc}")
+
+
+# Largest stocks, ETFs, bond ETFs and money market ETFs with price, news and
+# analyst ratings over the last `days` days.
+@app.get("/api/assets")
+def all_assets(
+    days: int = Query(assets.DEFAULT_HORIZON_DAYS, ge=1, le=assets.MAX_HORIZON_DAYS, description="Time horizon in days, counting back from today."),
+    news_limit: int = Query(assets.DEFAULT_NEWS_LIMIT, ge=0, le=50, description="Maximum news articles per stock."),
+):
+    try:
+        return assets.get_assets(days, news_limit)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not load assets: {exc}")

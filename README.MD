@@ -114,3 +114,32 @@ Query params:
 | Industrial production YoY | INDPRO | 0.10 | risk-on |
 
 Each indicator gets a **level** score and a **trend** score. Level is the percentile of the latest value within the lookback window. Trend is the percentile of its latest N-month change. The two are blended 60/40 and flipped where needed, so 1 always means risk-on. The final score is the weighted average. Results are cached for 6 hours. `FRED_API_KEY` is optional; without it the API uses FRED's public CSV download.
+
+## Assets API
+
+`GET /api/assets?days=30` returns the largest US assets in one call, with price, news and analyst ratings over the last `days` days.
+
+| Asset class | Count | Ranked by |
+|---|---|---|
+| `stocks` | 100 | Market cap, NASDAQ/NYSE/NYSE American, one share class per company |
+| `etfs` | 50 | Net assets, excluding bond and money market ETFs (equity, gold, etc.) |
+| `bonds` | 50 | Net assets, bond ETFs |
+| `money_market` | 25 | Net assets, ultrashort bond ETFs (T-bill and money-market-style, such as SGOV, BIL and JPST) |
+
+Query params:
+
+- `days` (1–365, default 30): the time horizon, counted back from today.
+- `news_limit` (0–50, default 5): the maximum number of news articles per stock.
+
+Each asset includes:
+
+- **Basics:** rank, symbol, name, exchange, `size_usd` (market cap or net assets), dividend yield, plus P/E for stocks or expense ratio for funds.
+- **`price`:** current price, daily change, and the start price, % change, high, low and annualised volatility over the horizon.
+- **`ratings`** (stocks only): Yahoo consensus (1 = strong buy, 5 = strong sell), counts of upgrades, downgrades and initiations, average price target, and every analyst action within the horizon.
+- **`news`** (stocks only): number of articles in the horizon and the newest `news_limit` articles. `covers_from` is the oldest article Finnhub returned. Finnhub sends at most about 250 articles, so for heavily covered stocks this can be later than the start of the horizon.
+
+Data sources: Yahoo Finance (`yfinance`) for rankings, prices and analyst actions, and Finnhub for news. Set `FINNHUB_API_KEY` in `.env` (you can get a free key at https://finnhub.io/dashboard).
+
+Performance: the server starts loading data on startup. Finnhub's free plan allows 60 calls per minute and news needs one call per stock, so the first response takes about 2 minutes. After that, any horizon is answered from the cache. News refreshes hourly in the background, and prices refresh every 15 minutes.
+
+Money market mutual funds (VMFXX, SPAXX and similar) are excluded because Yahoo's fund sizes for them are wrong. For example, it reports Fidelity's funds as $1M.
