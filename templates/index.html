@@ -1,76 +1,102 @@
-<!--Webpage here-->
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Capital Allocation</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <meta name="theme-color" content="#080b10">
+  <meta name="description" content="Set your investment preferences and explore your capital allocation strategy.">
+  <title>Imperial Capital Allocation</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
 </head>
 <body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
   <main class="page-shell">
     <header class="topbar">
-      <a class="wordmark" href="#" aria-label="Northstar home">
-        <span class="mark" aria-hidden="true">N</span>
-        NORTHSTAR <span class="wordmark-divider">/</span> CAPITAL
+      <a class="wordmark" href="/" aria-label="Imperial Capital Allocation home">
+        <span class="mark" aria-hidden="true"><span>I</span></span>
+        <span class="brand-name">IMPERIAL<span class="brand-divider">/</span>CAPITAL ALLOCATION</span>
       </a>
-      <span class="status">
-        <span class="status-dot" aria-hidden="true"></span>
-        INVESTMENT PROFILE
-      </span>
+      <div class="header-meta"><span class="status-dot" aria-hidden="true"></span><span>INVESTOR WORKSPACE</span></div>
     </header>
 
     <section class="content" aria-labelledby="page-title">
-      <p class="eyebrow">PORTFOLIO SETTINGS <span>—</span> 01</p>
-      <h1 id="page-title">Capital<br><span>Allocation</span></h1>
-      <p class="intro">Set the principles and horizon that guide your investment strategy.</p>
+      <div class="hero">
+        <p class="eyebrow"><span class="eyebrow-line"></span> YOUR INVESTMENT STRATEGY</p>
+        <h1 id="page-title">Capital <span>Allocation</span></h1>
+        <p class="intro">A clearer view of the future you’re investing toward. Set your preferences, then start a conversation.</p>
+      </div>
 
-      <form class="settings" action="#" method="get">
-        <fieldset class="setting setting-checkbox">
-          <legend class="setting-label">Investment principles</legend>
-          <label class="check-row" for="esg-awareness">
-            <span class="check-copy">
-              <span class="control-title">ESG awareness</span>
-              <span class="control-hint">Consider environmental, social, and governance factors</span>
-            </span>
-            <input id="esg-awareness" name="esg-awareness" type="checkbox">
-            <span class="custom-check" aria-hidden="true"></span>
-          </label>
-        </fieldset>
-
-        <fieldset class="setting setting-horizon">
-          <legend class="setting-label">Investment horizon</legend>
-          <div class="range-heading">
-            <label class="control-title" for="time-horizon">Time horizon</label>
-            <span class="range-value">10 <span>years</span></span>
+      <section class="preferences panel" aria-labelledby="preferences-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">01 <span>/</span> PROFILE</p>
+            <h2 id="preferences-title">Your preferences</h2>
           </div>
-          <input
-            id="time-horizon"
-            name="time-horizon"
-            class="range"
-            type="range"
-            min="1"
-            max="20"
-            value="10"
-            aria-valuetext="10 years"
-          >
-          <div class="range-labels">
-            <span>1 year</span>
-            <span>20 years</span>
-          </div>
-        </fieldset>
+          <span class="edit-note"><span class="edit-dot" aria-hidden="true"></span> PROFILE CONTROLS</span>
+        </div>
 
-        <p class="footnote">Your preferences can be reviewed and adjusted at any time.</p>
-      </form>
+        <div class="settings-grid">
+          <fieldset class="setting">
+            <legend class="setting-label">INVESTMENT PRINCIPLES</legend>
+            <label class="check-row" for="esg-awareness">
+              <span class="setting-icon leaf-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M19.5 4.5C12 4.5 6 6.8 6 12.2c0 2.2 1.7 3.8 3.8 3.8 5.4 0 7.7-6 7.7-11.5ZM5 20c2-4.5 5.5-7 10-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <span class="check-copy">
+                <span class="control-title">ESG awareness</span>
+                <span class="control-hint">Factor sustainability into your investment approach</span>
+              </span>
+              <input id="esg-awareness" name="esg-awareness" type="checkbox">
+              <span class="switch" aria-hidden="true"><span></span></span>
+            </label>
+          </fieldset>
+
+          <fieldset class="setting setting-horizon">
+            <legend class="setting-label">TIME HORIZON</legend>
+            <div class="range-heading">
+              <label class="control-title" for="time-horizon">How long are you investing for?</label>
+              <span class="range-value">10 <span>years</span></span>
+            </div>
+            <input id="time-horizon" name="time-horizon" class="range" type="range" min="1" max="20" value="10" aria-valuetext="10 years">
+            <div class="range-labels"><span>1 year</span><span>20 years</span></div>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="assistant" aria-labelledby="assistant-title">
+        <div class="assistant-heading">
+          <div class="assistant-avatar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="m12 2 1.7 7.2L21 12l-7.3 2.8L12 22l-1.7-7.2L3 12l7.3-2.8L12 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="m19 2 .7 2.3L22 5l-2.3.7L19 8l-.7-2.3L16 5l2.3-.7L19 2Z" fill="currentColor"/></svg>
+          </div>
+          <div class="assistant-copy"><h2 id="assistant-title">Strategy assistant</h2><p>Think through your next move, one question at a time.</p></div>
+          <span class="online-badge"><span></span> AI PREVIEW</span>
+        </div>
+
+        <div class="welcome-message">
+          <span class="message-mark" aria-hidden="true">I</span>
+          <p>What would you like to explore about your investment strategy?</p>
+        </div>
+
+        <form class="chat-composer" action="#" method="get" onsubmit="return false">
+          <label class="sr-only" for="chat-message">Message the strategy assistant</label>
+          <input id="chat-message" name="message" type="text" placeholder="Ask about your capital allocation…" autocomplete="off">
+          <button class="send-button" type="submit" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+        <p class="assistant-note"><span aria-hidden="true">✦</span> AI can make mistakes. Consider your own research before making investment decisions.</p>
+      </section>
     </section>
 
-    <footer class="footer">
-      <span>PRIVATE INVESTOR PORTAL</span>
-      <span>© 2025 NORTHSTAR CAPITAL</span>
-    </footer>
+    <footer class="footer"><span><span class="footer-mark">I</span> IMPERIAL CAPITAL ALLOCATION</span><span>INVEST WITH CLARITY</span></footer>
   </main>
-<script src="/static/script.js" defer></script>
+
+<script src="{{ url_for('static', path='script.js') }}" defer></script>
 
 </body>
 </html>
+
+
+
+
