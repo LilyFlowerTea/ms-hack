@@ -6,3 +6,4 @@ backtrader
 pandas
 yfinance
 matplotlib
+jinja2
