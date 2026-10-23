@@ -190,3 +190,4 @@ pyrightconfig.json
 .ionide
 
 .venv
+test_backtest.py
