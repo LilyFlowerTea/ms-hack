@@ -2,21 +2,13 @@
 
 import argparse
 import json
-import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
-from openai import AzureOpenAI
-
+from ai_config import get_azure_client, get_chat_model
 from backtest import Backtest
 from tax import check_tax_efficiency
-
-load_dotenv()
-
-endpoint = "https://app-uoaihack2ix6ak.azurewebsites.net"
-model_name = "gpt-6.1-sol"
 
 
 def _parse_portfolio(portfolio_json: Mapping[str, Any] | str | Path) -> Mapping[str, Any]:
@@ -45,46 +37,53 @@ def check_portfolio(portfolio_json: Mapping[str, Any] | str | Path) -> str:
     backtest = Backtest(portfolio)
     results = backtest.run()
 
+    portfolio_summary = summarize_backtest(backtest.portfolio, results)
+    tax_summary = check_tax_efficiency(backtest.portfolio, results)
+    return (
+        f"{portfolio_summary}\n\n"
+        f"UK corporation-tax efficiency\n{tax_summary}"
+    )
+
+
+def summarize_backtest(
+    portfolio: Mapping[str, Any],
+    results: Mapping[str, Any],
+) -> str:
+    """Summarize metrics from an already-completed backtest."""
     summary_results = {key: value for key, value in results.items() if key != "equity_curve"}
     report = {
-        "holdings": backtest.portfolio["holdings"],
+        "holdings": portfolio["holdings"],
         "backtest_results": summary_results,
     }
 
-    client = AzureOpenAI(
-        api_version=os.environ["api_version"],
-        azure_endpoint=endpoint,
-        api_key=os.environ["api_key"],
-    )
-    response = client.chat.completions.create(
-        model=model_name,
-        max_completion_tokens=1000,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Summarize the supplied portfolio backtest accurately and concisely. "
-                    "Use only the supplied data, explain returns and risk metrics in plain "
-                    "language, and state that historical performance does not predict future "
-                    "results. Do not present this as financial or tax advice. At the end of "
-                    "the summary, provide the JSON from backtest results in a code block."
-                ),
-            },
-            {
-                "role": "user",
-                "content": json.dumps(report, indent=2),
-            },
-        ],
-    )
+    client = get_azure_client()
+    try:
+        response = client.chat.completions.create(
+            model=get_chat_model(),
+            max_completion_tokens=1000,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Summarize the supplied portfolio backtest accurately and concisely. "
+                        "Use only the supplied data, explain returns and risk metrics in plain "
+                        "language, and state that historical performance does not predict future "
+                        "results. Do not present this as financial or tax advice. At the end of "
+                        "the summary, provide the JSON from backtest results in a code block."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(report, indent=2),
+                },
+            ],
+        )
 
-    if not response.choices or not response.choices[0].message.content:
-        raise RuntimeError("The model returned no portfolio summary.")
-
-    tax_summary = check_tax_efficiency(backtest.portfolio, results)
-    return (
-        f"{response.choices[0].message.content}\n\n"
-        f"UK corporation-tax efficiency\n{tax_summary}"
-    )
+        if not response.choices or not response.choices[0].message.content:
+            raise RuntimeError("The model returned no portfolio summary.")
+        return response.choices[0].message.content
+    finally:
+        client.close()
 
 
 def main() -> None:

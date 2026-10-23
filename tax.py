@@ -1,17 +1,10 @@
 """Assess a portfolio's UK corporation-tax efficiency from available data."""
 
 import json
-import os
 from collections.abc import Mapping
 from typing import Any
 
-from dotenv import load_dotenv
-from openai import AzureOpenAI
-
-load_dotenv()
-
-endpoint = "https://app-uoaihack2ix6ak.azurewebsites.net"
-model_name = "gpt-6.1-sol"
+from ai_config import get_azure_client, get_chat_model
 government_sources = (
     (
         "Corporation Tax rates, expenses and reliefs",
@@ -45,56 +38,56 @@ def check_tax_efficiency(
         "backtest_results": results,
     }
 
-    client = AzureOpenAI(
-        api_version=os.environ["api_version"],
-        azure_endpoint=endpoint,
-        api_key=os.environ["api_key"],
-    )
-    response = client.chat.completions.create(
-        model=model_name,
-        max_completion_tokens=1000,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Assess the supplied investment portfolio's UK corporation-tax "
-                    "efficiency using only the supplied data and the included official "
-                    "GOV.UK references. This is preliminary educational information, not tax "
-                    "advice or a calculation of tax due. The input only includes holdings, "
-                    "dates, initial capital, and pre-tax backtest performance, so it cannot "
-                    "establish taxable profits or determine whether the portfolio is tax "
-                    "optimal. Begin with the exact verdict 'Tax-optimality: UNDETERMINED "
-                    "(insufficient tax and accounting data).' Do not claim the portfolio is "
-                    "tax-optimal or tax-inefficient without evidence. Explain that realized "
-                    "disposals, acquisition costs, income and distributions, expenses, "
-                    "accounting period, company circumstances, losses, and applicable "
-                    "reliefs are missing. Explain in general terms that UK company tax on "
-                    "profits and gains depends on accounting-period rules, profit levels, "
-                    "and eligible reliefs, referring to the provided GOV.UK pages. Do not "
-                    "infer tax treatment, company status, fund domicile, dividend character, "
-                    "or rates from ticker symbols. State what additional records a qualified "
-                    "adviser would need. Do not assert a specific tax liability or recommend "
-                    "transactions."
-                ),
-            },
-            {
-                "role": "user",
-                "content": json.dumps(
-                    {
-                        **input_data,
-                        "official_uk_government_sources": [
-                            {"title": title, "url": url}
-                            for title, url in government_sources
-                        ],
-                    },
-                    indent=2,
-                ),
-            },
-        ],
-    )
+    client = get_azure_client()
+    try:
+        response = client.chat.completions.create(
+            model=get_chat_model(),
+            max_completion_tokens=1000,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Assess the supplied investment portfolio's UK corporation-tax "
+                        "efficiency using only the supplied data and the included official "
+                        "GOV.UK references. This is preliminary educational information, not tax "
+                        "advice or a calculation of tax due. The input only includes holdings, "
+                        "dates, initial capital, and pre-tax backtest performance, so it cannot "
+                        "establish taxable profits or determine whether the portfolio is tax "
+                        "optimal. Begin with the exact verdict 'Tax-optimality: UNDETERMINED "
+                        "(insufficient tax and accounting data).' Do not claim the portfolio is "
+                        "tax-optimal or tax-inefficient without evidence. Explain that realized "
+                        "disposals, acquisition costs, income and distributions, expenses, "
+                        "accounting period, company circumstances, losses, and applicable "
+                        "reliefs are missing. Explain in general terms that UK company tax on "
+                        "profits and gains depends on accounting-period rules, profit levels, "
+                        "and eligible reliefs, referring to the provided GOV.UK pages. Do not "
+                        "infer tax treatment, company status, fund domicile, dividend character, "
+                        "or rates from ticker symbols. State what additional records a qualified "
+                        "adviser would need. Do not assert a specific tax liability or recommend "
+                        "transactions."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            **input_data,
+                            "official_uk_government_sources": [
+                                {"title": title, "url": url}
+                                for title, url in government_sources
+                            ],
+                        },
+                        indent=2,
+                    ),
+                },
+            ],
+        )
 
-    if not response.choices or not response.choices[0].message.content:
-        raise RuntimeError("The model returned no UK corporation-tax assessment.")
+        if not response.choices or not response.choices[0].message.content:
+            raise RuntimeError("The model returned no UK corporation-tax assessment.")
+        model_assessment = response.choices[0].message.content
+    finally:
+        client.close()
 
     verdict = (
         "Tax-optimality: UNDETERMINED "
@@ -105,6 +98,6 @@ def check_tax_efficiency(
     )
     return (
         f"{verdict}\n\n"
-        f"{response.choices[0].message.content}\n\n"
+        f"{model_assessment}\n\n"
         f"Official UK government context (GOV.UK):\n{source_list}"
     )

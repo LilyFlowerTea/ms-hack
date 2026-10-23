@@ -1,9 +1,10 @@
 PROJECT WEBSITE LINK:
 https://deployed-ms-hack.vercel.app/
 
-# Example Project
+# Imperial Capital Allocation
 
-Minimal Python samples that call the OpenAI Portal using the `openai` SDK:
+Web app for investment conversations, portfolio backtesting, and a qualified UK
+corporation-tax review. It also includes standalone Azure OpenAI examples:
 
 - [main.py](main.py) — chat completions example (`gpt-6.1-sol`)
 - [embeddings.py](embeddings.py) — text embeddings example (`text-embedding-3-large`)
@@ -59,7 +60,39 @@ Edit those files to update their behavior.
 
 > **Tip:** For real projects, load these values from environment variables (e.g. via `os.environ` or `python-dotenv`) instead of hard-coding them.
 
-### 5. Run the samples
+### 5. Run the application
+
+Start the FastAPI app from the repository root:
+
+```powershell
+uvicorn api.index:app --reload --port 1234
+```
+
+Open `http://127.0.0.1:1234`. The page provides investment and tax chats, a
+portfolio-builder JSON handoff, and a portfolio backtest. The backtest uses
+adjusted historical prices from Yahoo Finance, then returns performance metrics,
+a line chart, a portfolio summary, and a UK corporation-tax assessment.
+
+Submit a portfolio in this format:
+
+```bash
+{
+  "holdings": {"AAPL": 0.6, "MSFT": 0.4},
+  "start": "2020-01-01",
+  "end": "2024-01-01",
+  "initial_cash": 10000
+}
+```
+
+Weights must be positive and sum to 1. The `end` date is exclusive. The backtest
+and tax review are also exposed at `POST /api/backtest`. The UK tax assessment
+is informational: portfolio prices and weights alone cannot establish taxable
+profits or tax-optimality.
+
+The app reads Azure settings from `.env` using the `AZURE_OPENAI_*` keys in
+`.env.example`; legacy `api_key` and `api_version` values are also supported.
+
+### 6. Run the standalone examples
 
 Run the chat completion example:
 
@@ -67,15 +100,13 @@ Run the chat completion example:
 python main.py
 ```
 
-You should see the assistant's response printed to the terminal.
-
 Run the embeddings example:
 
 ```bash
 python embeddings.py
 ```
 
-This sends three short phrases to the `text-embedding-3-large` deployment and prints:
+This sends three short phrases to the embedding deployment and prints:
 
 - the full JSON response from the embeddings API
 - a one-line summary per input showing the embedding vector length and the first/last two values

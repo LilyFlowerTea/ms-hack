@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from contextlib import asynccontextmanager
@@ -6,10 +7,14 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request
+from pathlib import Path
+from typing import Literal
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from openai import AzureOpenAI, OpenAIError
+from openai import OpenAIError
 from pydantic import BaseModel, Field
 
 try:
@@ -19,6 +24,14 @@ except ImportError:  # running from inside api/
     import agent
     import assets
     from risk import compute_risk_score
+from ai_config import (
+    AzureConfigurationError,
+    get_azure_client as create_azure_client,
+    get_chat_model,
+)
+from backtest import Backtest
+from check_portfolio import summarize_backtest
+from tax import check_tax_efficiency
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
@@ -26,7 +39,6 @@ STATIC_DIR = PROJECT_ROOT / "static"
 PROMPTS_DIR = PROJECT_ROOT / "prompts"
 MAIN_SYSTEM_PROMPT = (PROMPTS_DIR / "main_system_prompt.txt").read_text(encoding="utf-8").strip()
 TAX_SYSTEM_PROMPT = (PROMPTS_DIR / "tax_system_prompt.txt").read_text(encoding="utf-8").strip()
-load_dotenv(PROJECT_ROOT / ".env")
 
 
 @asynccontextmanager
@@ -38,13 +50,6 @@ async def lifespan(app):
 app = FastAPI(title="Imperial Capital Allocation", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-AZURE_OPENAI_ENDPOINT = os.environ.get(
-    "AZURE_OPENAI_ENDPOINT",
-    "https://app-uoaihack2ix6ak.azurewebsites.net",
-)
-AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
-AZURE_OPENAI_MODEL = os.environ.get("AZURE_OPENAI_MODEL", "gpt-6.1-sol")
 
 
 class ConversationTurn(BaseModel):
@@ -70,20 +75,11 @@ class PortfolioBriefRequest(BaseModel):
     time_horizon: int = Field(ge=1, le=10)
 
 
-def get_azure_client() -> AzureOpenAI:
-    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="The Azure OpenAI API key is not configured. Add AZURE_OPENAI_API_KEY to your environment.",
-        )
-    return AzureOpenAI(
-        api_version=AZURE_OPENAI_API_VERSION,
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_key=api_key,
-        timeout=45.0,
-        max_retries=1,
-    )
+class BacktestRequest(BaseModel):
+    holdings: dict[str, float] = Field(min_length=1)
+    start: str
+    end: str
+    initial_cash: float = Field(gt=0)
 
 
 def get_reply(
@@ -91,10 +87,13 @@ def get_reply(
     user_messages: list[dict[str, str]],
     max_completion_tokens: int = 1200,
 ) -> str:
-    client = get_azure_client()
+    try:
+        client = create_azure_client()
+    except AzureConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     try:
         response = client.chat.completions.create(
-            model=AZURE_OPENAI_MODEL,
+            model=get_chat_model(),
             messages=[{"role": "system", "content": system_prompt}, *user_messages],
             max_completion_tokens=max_completion_tokens,
         )
@@ -155,6 +154,37 @@ def tax_assistant(request: TaxRequest) -> dict[str, str]:
             TAX_SYSTEM_PROMPT,
             messages,
         )
+    }
+
+
+@app.post("/api/backtest")
+def run_portfolio_backtest(request: BacktestRequest) -> dict[str, object]:
+    try:
+        backtest = Backtest(request.model_dump())
+        results = backtest.run()
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    try:
+        portfolio_summary = summarize_backtest(backtest.portfolio, results)
+        tax_summary = check_tax_efficiency(backtest.portfolio, results)
+    except OpenAIError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Azure OpenAI could not summarize the backtest. Check the configured credentials and deployment.",
+        ) from exc
+    except AzureConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    metrics = {key: value for key, value in results.items() if key != "equity_curve"}
+    chart = base64.b64encode(backtest.plot(results)).decode("ascii")
+    return {
+        "metrics": metrics,
+        "portfolio_summary": portfolio_summary,
+        "tax_assessment": tax_summary,
+        "chart_data_uri": f"data:image/png;base64,{chart}",
     }
 
 

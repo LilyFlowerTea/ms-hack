@@ -13,6 +13,14 @@ const handoffStatus = document.querySelector("#handoff-status");
 const handoffOutput = document.querySelector("#handoff-output");
 const handoffJson = document.querySelector("#handoff-json");
 const copyHandoffButton = document.querySelector("#copy-handoff");
+const backtestForm = document.querySelector("#backtest-form");
+const portfolioInput = document.querySelector("#portfolio-json");
+const backtestStatus = document.querySelector("#backtest-status");
+const backtestOutput = document.querySelector("#backtest-output");
+const backtestSummary = document.querySelector("#backtest-summary");
+const backtestTaxSummary = document.querySelector("#backtest-tax-summary");
+const backtestChart = document.querySelector("#backtest-chart");
+const backtestMetrics = document.querySelector("#backtest-metrics");
 
 if (horizon && valueLabel) {
   function updateHorizon() {
@@ -215,6 +223,54 @@ if (copyHandoffButton && handoffJson && handoffStatus) {
       handoffStatus.textContent = "JSON payload copied to clipboard.";
     } catch {
       handoffStatus.textContent = "Clipboard access failed. Select and copy the JSON payload above.";
+    }
+  });
+}
+
+if (
+  backtestForm &&
+  portfolioInput &&
+  backtestStatus &&
+  backtestOutput &&
+  backtestSummary &&
+  backtestTaxSummary &&
+  backtestChart &&
+  backtestMetrics
+) {
+  backtestForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = backtestForm.querySelector("#run-backtest");
+    let portfolio;
+    try {
+      portfolio = JSON.parse(portfolioInput.value);
+    } catch {
+      backtestStatus.textContent = "Enter valid JSON before starting the backtest.";
+      return;
+    }
+
+    submitButton.disabled = true;
+    backtestStatus.textContent = "Fetching historical prices and preparing the reports…";
+    backtestOutput.hidden = true;
+
+    try {
+      const response = await fetch("/api/backtest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(portfolio),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(errorText(payload));
+
+      backtestSummary.textContent = payload.portfolio_summary;
+      backtestTaxSummary.textContent = payload.tax_assessment;
+      backtestChart.src = payload.chart_data_uri;
+      backtestMetrics.textContent = JSON.stringify(payload.metrics, null, 2);
+      backtestOutput.hidden = false;
+      backtestStatus.textContent = "Backtest and reports are ready.";
+    } catch (error) {
+      backtestStatus.textContent = error.message;
+    } finally {
+      submitButton.disabled = false;
     }
   });
 }
