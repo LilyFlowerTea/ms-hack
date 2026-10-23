@@ -5,11 +5,11 @@ from openai import AzureOpenAI
 
 load_dotenv()
 
-endpoint = "https://app-uoaihack2ix6ak.azurewebsites.net"
-model_name = "text-embedding-3-large"
+endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://app-uoaihack2ix6ak.azurewebsites.net")
+model_name = os.environ.get("AZURE_OPENAI_EMBEDDING_MODEL", "text-embedding-3-large")
 
-api_key = os.environ["api_key"]
-api_version = os.environ["api_version"]
+api_key = os.environ["AZURE_OPENAI_API_KEY"]
+api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 
 client = AzureOpenAI(
     api_version=api_version,
