@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from openai import AzureOpenAI
 
 from backtest import Backtest
+from tax import check_tax_efficiency
 
 load_dotenv()
 
@@ -78,7 +79,12 @@ def check_portfolio(portfolio_json: Mapping[str, Any] | str | Path) -> str:
 
     if not response.choices or not response.choices[0].message.content:
         raise RuntimeError("The model returned no portfolio summary.")
-    return response.choices[0].message.content
+
+    tax_summary = check_tax_efficiency(backtest.portfolio, results)
+    return (
+        f"{response.choices[0].message.content}\n\n"
+        f"UK corporation-tax efficiency\n{tax_summary}"
+    )
 
 
 def main() -> None:
