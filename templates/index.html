@@ -102,6 +102,42 @@
         </section>
       </div>
 
+      <section class="backtest-panel panel" aria-labelledby="backtest-title">
+        <div class="handoff-copy">
+          <p class="section-kicker">HISTORICAL PORTFOLIO ANALYSIS</p>
+          <h2 id="backtest-title">Backtest and tax review</h2>
+          <p>Enter a portfolio JSON to fetch adjusted historical prices, calculate performance, and receive portfolio and UK corporation-tax summaries.</p>
+        </div>
+        <form id="backtest-form" class="backtest-form">
+          <label for="portfolio-json">Portfolio JSON</label>
+          <textarea id="portfolio-json" name="portfolio" rows="8" spellcheck="false" required>{
+  "holdings": {"AAPL": 0.6, "MSFT": 0.4},
+  "start": "2020-01-01",
+  "end": "2024-01-01",
+  "initial_cash": 10000
+}</textarea>
+          <div class="backtest-form-footer">
+            <span id="backtest-status" aria-live="polite">Historical returns do not predict future performance. Tax review is an estimate, not tax advice.</span>
+            <button id="run-backtest" class="handoff-button" type="submit">Run backtest</button>
+          </div>
+        </form>
+        <section id="backtest-output" class="backtest-output" aria-live="polite" hidden>
+          <div>
+            <p class="section-kicker">BACKTEST SUMMARY</p>
+            <p id="backtest-summary" class="backtest-summary"></p>
+          </div>
+          <div>
+            <p class="section-kicker">UK CORPORATION-TAX REVIEW</p>
+            <p id="backtest-tax-summary" class="backtest-summary"></p>
+          </div>
+          <img id="backtest-chart" class="backtest-chart" alt="Portfolio value over the backtest period">
+          <details class="backtest-details">
+            <summary>View performance metrics</summary>
+            <pre id="backtest-metrics"></pre>
+          </details>
+        </section>
+      </section>
+
       <section class="handoff-panel panel" aria-labelledby="handoff-title">
         <div class="handoff-copy">
           <p class="section-kicker">READY FOR THE NEXT STEP?</p>
