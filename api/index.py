@@ -13,9 +13,10 @@ from openai import AzureOpenAI, OpenAIError
 from pydantic import BaseModel, Field
 
 try:
-    from api import assets
+    from api import agent, assets
     from api.risk import compute_risk_score
 except ImportError:  # running from inside api/
+    import agent
     import assets
     from risk import compute_risk_score
 
@@ -247,3 +248,16 @@ def all_assets(
         return assets.get_assets(days, news_limit)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not load assets: {exc}")
+
+
+class AgentRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=4000, description="What the user wants from the portfolio.")
+
+
+# LLM agent: macro risk scale, a portfolio picked from /api/assets, and the reasoning.
+@app.post("/api/agent")
+def portfolio_agent(body: AgentRequest):
+    try:
+        return agent.run_agent(body.prompt)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Agent failed: {exc}")

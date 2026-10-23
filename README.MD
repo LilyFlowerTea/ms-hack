@@ -143,3 +143,16 @@ Data sources: Yahoo Finance (`yfinance`) for rankings, prices and analyst action
 Performance: the server starts loading data on startup. Finnhub's free plan allows 60 calls per minute and news needs one call per stock, so the first response takes about 2 minutes. After that, any horizon is answered from the cache. News refreshes hourly in the background, and prices refresh every 15 minutes.
 
 Money market mutual funds (VMFXX, SPAXX and similar) are excluded because Yahoo's fund sizes for them are wrong. For example, it reports Fidelity's funds as $1M.
+
+## Portfolio agent API
+
+`POST /api/agent` with `{"prompt": "I'm 30, saving for retirement, moderate risk"}` runs an LLM agent (`gpt-6.1-sol`). It loads the macro risk score and assets APIs, passes them to the model with the prompt, and returns:
+
+- **`macro_risk`**: the FRED score from `/api/risk`.
+- **`risk_scale`**: `macro` and `applied`. The model may move the scale by up to ±0.2 from the macro score to fit the prompt (age, horizon, goals), and gives `adjustment_reason`.
+- **`class_weights_pct`**: derived from the applied scale `r`. Stocks get `0.7r`, ETFs `0.3r`, and fixed income `1 − r`. Money market's share of fixed income grows as `r` falls, from 20% at `r = 1` to 70% at `r = 0`.
+- **`allocation`**: 20 stocks, 10 ETFs, 10 bonds and 5 money market funds, all taken from `/api/assets`. Each holding has `weight_pct` (of the whole portfolio), `weight_in_class_pct`, price data and a one-line rationale. Weights add up to 100%.
+- **`reasoning`**: the agent's explanation.
+- **`notes`**: any corrections the server made, such as dropping symbols outside the asset class or adding the largest assets when the model picked too few.
+
+Uses the same `AZURE_OPENAI_*` settings in `.env` as the chat endpoints. The first call waits for the assets cache (about 2 minutes after startup). Try it from the CLI with `python -m api.agent "your prompt"`.
