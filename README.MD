@@ -45,10 +45,17 @@ pip install -r requirements.txt
 
 ### 4. Configure credentials
 
-Open [main.py](main.py) and update the following values with your own:
+Create a `.env` file from `.env.example` and set the Azure values:
 
-- `api_key` — your API Key
-- `model_name` — the name of the model
+- `AZURE_OPENAI_API_KEY` — your API key
+- `AZURE_OPENAI_ENDPOINT` — the endpoint URL
+- `AZURE_OPENAI_API_VERSION` — the API version
+- `AZURE_OPENAI_MODEL` — the chat deployment name
+- `AZURE_OPENAI_EMBEDDING_MODEL` — the embeddings deployment name
+
+The main and tax assistants load their system prompts from
+`prompts/main_system_prompt.txt` and `prompts/tax_system_prompt.txt` respectively.
+Edit those files to update their behavior.
 
 > **Tip:** For real projects, load these values from environment variables (e.g. via `os.environ` or `python-dotenv`) instead of hard-coding them.
 
@@ -74,7 +81,7 @@ This sends three short phrases to the `text-embedding-3-large` deployment and pr
 - a one-line summary per input showing the embedding vector length and the first/last two values
 - token usage information
 
-Update `api_key`, and `model_name` your team's credentials in the portal.
+Use the endpoint, key, API version, and deployment names provided by your team.
 
 ## Troubleshooting
 

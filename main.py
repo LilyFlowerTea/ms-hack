@@ -1,15 +1,19 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
-endpoint = "https://app-uoaihack2ix6ak.azurewebsites.net"
-model_name = "gpt-6.1-sol"
+endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "https://app-uoaihack2ix6ak.azurewebsites.net")
+model_name = os.environ.get("AZURE_OPENAI_MODEL", "gpt-6.1-sol")
 
-api_key = os.environ["api_key"]
-api_version = os.environ["api_version"]
+api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+
+if not api_key:
+    raise RuntimeError("Set AZURE_OPENAI_API_KEY in your .env file or environment.")
 
 client = AzureOpenAI(
     api_version=api_version,
