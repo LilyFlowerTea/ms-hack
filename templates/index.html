@@ -1,0 +1,76 @@
+<!--Webpage here-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Capital Allocation</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="wordmark" href="#" aria-label="Northstar home">
+        <span class="mark" aria-hidden="true">N</span>
+        NORTHSTAR <span class="wordmark-divider">/</span> CAPITAL
+      </a>
+      <span class="status">
+        <span class="status-dot" aria-hidden="true"></span>
+        INVESTMENT PROFILE
+      </span>
+    </header>
+
+    <section class="content" aria-labelledby="page-title">
+      <p class="eyebrow">PORTFOLIO SETTINGS <span>—</span> 01</p>
+      <h1 id="page-title">Capital<br><span>Allocation</span></h1>
+      <p class="intro">Set the principles and horizon that guide your investment strategy.</p>
+
+      <form class="settings" action="#" method="get">
+        <fieldset class="setting setting-checkbox">
+          <legend class="setting-label">Investment principles</legend>
+          <label class="check-row" for="esg-awareness">
+            <span class="check-copy">
+              <span class="control-title">ESG awareness</span>
+              <span class="control-hint">Consider environmental, social, and governance factors</span>
+            </span>
+            <input id="esg-awareness" name="esg-awareness" type="checkbox">
+            <span class="custom-check" aria-hidden="true"></span>
+          </label>
+        </fieldset>
+
+        <fieldset class="setting setting-horizon">
+          <legend class="setting-label">Investment horizon</legend>
+          <div class="range-heading">
+            <label class="control-title" for="time-horizon">Time horizon</label>
+            <span class="range-value">10 <span>years</span></span>
+          </div>
+          <input
+            id="time-horizon"
+            name="time-horizon"
+            class="range"
+            type="range"
+            min="1"
+            max="20"
+            value="10"
+            aria-valuetext="10 years"
+          >
+          <div class="range-labels">
+            <span>1 year</span>
+            <span>20 years</span>
+          </div>
+        </fieldset>
+
+        <p class="footnote">Your preferences can be reviewed and adjusted at any time.</p>
+      </form>
+    </section>
+
+    <footer class="footer">
+      <span>PRIVATE INVESTOR PORTAL</span>
+      <span>© 2025 NORTHSTAR CAPITAL</span>
+    </footer>
+  </main>
+<script src="/static/script.js" defer></script>
+
+</body>
+</html>
