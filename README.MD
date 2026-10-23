@@ -1,5 +1,5 @@
 PROJECT WEBSITE LINK:
-https://deployed-ms-hack.vercel.app/
+https://ms-hack-new.vercel.app/
 
 # Imperial Capital Allocation
 
