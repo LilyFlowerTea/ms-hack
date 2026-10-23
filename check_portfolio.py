@@ -65,7 +65,8 @@ def check_portfolio(portfolio_json: Mapping[str, Any] | str | Path) -> str:
                     "Summarize the supplied portfolio backtest accurately and concisely. "
                     "Use only the supplied data, explain returns and risk metrics in plain "
                     "language, and state that historical performance does not predict future "
-                    "results. Do not present this as financial or tax advice."
+                    "results. Do not present this as financial or tax advice. At the end of "
+                    "the summary, provide the JSON from backtest results in a code block."
                 ),
             },
             {
