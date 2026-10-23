@@ -1,10 +1,15 @@
+import os
+
+from dotenv import load_dotenv
 from openai import AzureOpenAI
+
+load_dotenv()
 
 endpoint = "https://app-uoaihack2ix6ak.azurewebsites.net"
 model_name = "text-embedding-3-large"
 
-api_key = "<your api key>"
-api_version = "2024-12-01-preview"
+api_key = os.environ["api_key"]
+api_version = os.environ["api_version"]
 
 client = AzureOpenAI(
     api_version=api_version,
